@@ -182,29 +182,75 @@ function getHash (config, key1, key2) {
 
 // Reading keys
 
-function getPublicKey (arr) {
-    if (arr.length == 0) { return 0n }
-    var c = arr[0]
-    var rest = arr.slice(1)
+function getPublicKey (str) {
+    if (str.length == 0) { return 0n }
+    var c = str[0]
+    var rest = str.slice(1)
     return (BigInt(c.charCodeAt(0)) * (128n ** BigInt(rest.length))) + BigInt(getPublicKey(rest))
 }
 
-function breakArray (arr, elt) {
-    for (var i = 0; i < arr.length; i++) {
-        if (arr[i] == elt) {
-            return [arr.slice(0,i), arr.slice(i+1, arr.length)]
-        }
+const commonCombinations = Object.freeze([
+    "or","un","el","is","it","us","of","ag","um","yu","in","er","es",
+    "ti","re","te","le","ra","li","ri","ne","se","de","co","ro","la",
+    "di","ca","ta","ve","he","si","me","pe","ni","lo","ma","mi","to",
+    "ce","na","ho","ge","hi","ha","po","pa","no","ci","pi","ke","mo",
+    "ba","be","sa","fi","bo","su","so","bi","tu","vi","gi","ru","ku",
+    "ga","ko","qu","lu","ki","do","fe","fo","bu","da","we","va","fu",
+    "wa","fa","mu","pu","go","wo","gu","du","nu","hu","vo","yi","ze",
+    "ye","ju","jo","xi","ka","xe","ja","zi","je"
+])
+
+function readMnemonic (str) {
+    var res = ""
+    const strp = str.replace(/\s+/g, "")
+    if (strp.length % 2 != 0) { throw new Error("") }
+    for (var i = 0; i < strp.length - 1; i += 2) {
+        var ind = commonCombinations.indexOf(strp.slice(i, i+2));
+        if (ind == -1) { throw new Error("") }
+        res += ind.toString().padStart(2, '0')
     }
-    return [arr]
+
+    return BigInt(res)
 }
 
-function getPrivateKey (arr) {
-    var broken = breakArray(arr, '-')
-    if (broken.length == 1) { return BigInt(parseInt(broken[0].join(""))) }
+function breakString (str, elt) {
+    for (var i = 0; i < str.length; i++) {
+        if (str[i] == elt) {
+            return [str.slice(0,i), str.slice(i+1, str.length)]
+        }
+    }
+    return [str]
+}
+
+function readArithmetic (str) {
+    if (str.includes('+')) {
+        return str.split('+').map(getPrivateKey).reduce((acc, num) => acc + num, 0n)
+    }
+    if (str.includes('*')) {
+        return str.split('*').map(getPrivateKey).reduce((acc, num) => acc * num, 1n)
+    }
+
+    var broken = breakString(str, '^')
+    if (broken.length == 1) { return BigInt(broken[0]) }
     else {
-        var base = BigInt(parseInt(broken[0].join("")))
-        var pow = BigInt(parseInt(broken[1].join("")))
+        var base = BigInt(broken[0])
+        var pow = readArithmetic(broken[1])
         return base ** pow
+    }
+}
+
+function isAlphabet(char) {
+    return /^[a-zA-Z]$/.test(char);
+}
+
+function getPrivateKey (str) {
+    if (str.length == 0) {
+        throw new Error("")
+    }
+    if (isAlphabet(str[0])) {
+        return readMnemonic(str)
+    } else {
+        return readArithmetic(str)
     }
 }
 
@@ -228,14 +274,10 @@ function numberOfPrivateChoiceKeys (amts) {
 }
 
 function getFinalHash (config, publicStr, choiceStr, shuffleStr) {
-    var publicArr = arr(publicStr)
-    var choiceArr = arr(choiceStr)
-    var shuffleArr = arr(shuffleStr)
-
-    var publicKey = getPublicKey(publicArr)
+    var publicKey = getPublicKey(publicStr)
     var div = numberOfPrivateChoiceKeys(config.map(dropElementInfo))
-    var choiceKey = (publicKey + getPrivateKey(choiceArr)) % div
-    var shuffleKey = getPrivateKey(shuffleArr)
+    var choiceKey = (publicKey + getPrivateKey(choiceStr)) % div
+    var shuffleKey = getPrivateKey(shuffleStr)
 
     return getHash(config, choiceKey, shuffleKey).join("")
 }
