@@ -9,13 +9,22 @@ function refreshOutput () {
     document.getElementById("showbutton").innerHTML = "Compute and show hash";
 }
 
+function shiftString (str, amt) {
+    var res = ""
+    for (var i = 0; i < str.length; i++) {
+        res += String.fromCharCode((str[i].charCodeAt(0) + amt) % 128);
+    }
+    return res
+}
+
 function getHashFromHTML () {
     var keyword = document.getElementById("configKeyword").value;
     var publicStr = document.getElementById("publicStr").value;
+    var publicStrPatch = parseInt(document.getElementById("publicStrPatch").value);
     var choiceStr = document.getElementById("choiceStr").value;
     var shuffleStr = document.getElementById("shuffleStr").value;
     try {
-        return getFinalHash(determineConfiguration(keyword), publicStr, choiceStr, shuffleStr);
+        return getFinalHash(determineConfiguration(keyword), shiftString(publicStr, publicStrPatch), choiceStr, shuffleStr);
     } catch (e) {
         return "Incorrect input!"
     }
