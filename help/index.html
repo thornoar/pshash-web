@@ -33,8 +33,12 @@
             </ul>
         </li>
         <li>
-            A public key, i.e. a string of characters representing the website or service that requires the password.
+            A <em>public</em> key, i.e. a string of characters representing the website or service that requires the password.
             Examples include "google", "steam", "spotify", etc.
+        </li>
+        <li>
+            A public key <em>patch</em>, a number between 0 and 127 that allows one to generate different passwords with the same set of keys.
+            The default value of the patch is 0. If a password produced by a set of keys becomes invalid, the user may set the patch value to 1 to produce a different password, and so on.
         </li>
         <li>
             A private <em>choice</em> key, a number between 0 and 10^42 (upper bound may depend on the source configuration).
